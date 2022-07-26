@@ -34,6 +34,9 @@ const Upload = () => {
             setProgress(100)
         }).catch(err => console.log(err))
         setProgress(0)
+        setTimeout(() => {
+            location.reload()
+        }, 1000);
     };
 
     useEffect(() => {
@@ -46,7 +49,6 @@ const Upload = () => {
     }, [allFiles.length])
 
     const handleDelete = (keyId) => {
-        location.reload()
         s3.deleteObject({
             Key: allFiles.filter(file => file.Key === keyId)[0].Key,
             Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME
@@ -55,6 +57,9 @@ const Upload = () => {
             // if (data.$response.httpResponse.statusCode === 200) { console.log("deleted") }
             // else { console.log("fail") }
         }).catch(err => console.log(err))
+        setTimeout(() => {
+            location.reload()
+        }, 1000);
     }
     console.log(allFiles)
 
@@ -85,20 +90,20 @@ const Upload = () => {
                         </div>
 
                         <div className="flex justify-center flex-col p-2">
-                            {file ? <p>{file.name}</p> : <p>No file selected</p>}
+                            {file ? <p>{file.name}</p> : <p>Any type of file</p>}
 
                             <button onClick={handleClick} className="w-full my-2 px-4 py-2 text-white bg-[#3f51d8] rounded shadow-xl hover:bg-[#81adde]">
-                            {progress > 0 ? <>
-                                <Progress
-                                    mt="sm"
-                                    size="xl"
-                                    radius="xl"
-                                    value={progress}
-                                    label={`Uploading ${progress}%`}
-                                    color="blue"
-                                />
-                            </>
-                                : 'Upload'}
+                                {progress > 0 ? <>
+                                    <Progress
+                                        mt="sm"
+                                        size="xl"
+                                        radius="xl"
+                                        value={progress}
+                                        label={`Uploading ${progress}%`}
+                                        color="blue"
+                                    />
+                                </>
+                                    : 'Upload'}
                             </button>
 
                         </div>
@@ -118,7 +123,7 @@ const Upload = () => {
                                 </div>
                                 <div className="px-3 pb-2">
                                     <div className="text-sm mb-2 text-gray-400 cursor-pointer flex justify-between font-medium">
-                                        <span>file size: {(Size/1000000).toFixed(2)}{" "}<span className='text-xs'>MB</span></span>
+                                        <span>file size: {(Size / 1000000).toFixed(2)}{" "}<span className='text-xs'>MB</span></span>
                                         <span onClick={() => handleDelete(Key)} className='text-red-500 cursor-pointer py-1 px-3 border border-solid border-red-500 rounded-sm hover:bg-red-500 hover:text-white' >Delete</span>
                                     </div>
                                 </div>
