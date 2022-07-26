@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import aws_sdk from 'aws-sdk'
 import { v4 } from 'uuid';
+import { Progress } from '@mantine/core';
 
 
 const Upload = () => {
 
     const [file, setFile] = useState()
     const [allFiles, setAllFiles] = useState([])
+    const [progress, setProgress] = useState(0)
 
     const config = {
         bucketName: process.env.NEXT_PUBLIC_BUCKET_NAME,
@@ -18,6 +20,7 @@ const Upload = () => {
     const s3 = new aws_sdk.S3(config);
 
     const handleClick = async () => {
+        setProgress(20)
         await s3.putObject({
             Key: `fileName-${file.name}_key-${v4()}`,
             Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
@@ -25,9 +28,12 @@ const Upload = () => {
             Body: file,
             ACL: 'public-read'
         }).promise().then(data => {
+            setProgress(60)
             if (data.$response.httpResponse.statusCode === 200) { console.log("uploaded 🔥") }
             else { console.log("fail 😔") }
+            setProgress(100)
         }).catch(err => console.log(err))
+        setProgress(0)
     };
 
     useEffect(() => {
@@ -40,7 +46,7 @@ const Upload = () => {
     }, [allFiles.length])
 
     const handleDelete = (keyId) => {
-        console.log(allFiles.filter(file => file.Key === keyId)[0])
+        location.reload()
         s3.deleteObject({
             Key: allFiles.filter(file => file.Key === keyId)[0].Key,
             Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME
@@ -82,7 +88,17 @@ const Upload = () => {
                             {file ? <p>{file.name}</p> : <p>No file selected</p>}
 
                             <button onClick={handleClick} className="w-full my-2 px-4 py-2 text-white bg-[#3f51d8] rounded shadow-xl hover:bg-[#81adde]">
-                                Upload
+                            {progress > 0 ? <>
+                                <Progress
+                                    mt="sm"
+                                    size="xl"
+                                    radius="xl"
+                                    value={progress}
+                                    label={`Uploading ${progress}%`}
+                                    color="blue"
+                                />
+                            </>
+                                : 'Upload'}
                             </button>
 
                         </div>
