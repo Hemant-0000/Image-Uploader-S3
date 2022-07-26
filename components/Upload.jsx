@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import S3 from 'react-aws-s3'
 import aws_sdk from 'aws-sdk'
 import { v4 } from 'uuid';
 
@@ -19,15 +18,16 @@ const Upload = () => {
     const s3 = new aws_sdk.S3(config);
 
     const handleClick = async () => {
-
-        const ReactS3Client = new S3(config);
-
-        await ReactS3Client.uploadFile(file, `fileName-${file.name}_key-${v4()}`).then(data => {
-            console.log(data)
-            if (data.status === 204) { console.log("success") }
-            else { console.log("fail") }
+        await s3.putObject({
+            Key: `fileName-${file.name}_key-${v4()}`,
+            Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
+            ContentType: file.type,
+            Body: file,
+            ACL: 'public-read'
+        }).promise().then(data => {
+            if (data.$response.httpResponse.statusCode === 200) { console.log("uploaded 🔥") }
+            else { console.log("fail 😔") }
         }).catch(err => console.log(err))
-
     };
 
     useEffect(() => {
@@ -37,7 +37,21 @@ const Upload = () => {
             }).catch(err => console.log(err))
         }
         fetch()
-    }, [])
+    }, [allFiles.length])
+
+    const handleDelete = (keyId) => {
+        console.log(allFiles.filter(file => file.Key === keyId)[0])
+        s3.deleteObject({
+            Key: allFiles.filter(file => file.Key === keyId)[0].Key,
+            Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME
+        }).promise().then(data => {
+            console.log(data + "📅")
+            // if (data.$response.httpResponse.statusCode === 200) { console.log("deleted") }
+            // else { console.log("fail") }
+        }).catch(err => console.log(err))
+    }
+    console.log(allFiles)
+
 
     return (
         <>
@@ -67,7 +81,7 @@ const Upload = () => {
                         <div className="flex justify-center flex-col p-2">
                             {file ? <p>{file.name}</p> : <p>No file selected</p>}
 
-                            <button onClick={handleClick} className="w-full my-2 px-4 py-2 text-white bg-[#3f51d8] rounded shadow-xl">
+                            <button onClick={handleClick} className="w-full my-2 px-4 py-2 text-white bg-[#3f51d8] rounded shadow-xl hover:bg-[#81adde]">
                                 Upload
                             </button>
 
@@ -77,16 +91,22 @@ const Upload = () => {
                 </div>
 
 
-                {allFiles.length > 0 && <p className='fixed right-[690px] text-xl py-8 top-[80px] font-bold text-gray-700 tracking-wider'>Your Uploads</p>}
+                {allFiles.length > 0 ? <p className='fixed right-[690px] text-xl py-8 top-[80px] font-bold text-gray-700 tracking-wider'>Your Uploads</p> : <p className='fixed right-[690px] text-xl py-8 top-[80px] font-bold text-gray-700 tracking-wider'>No Uploads</p>}
 
-                <div className='mt-32 col-span-1 left-[700px] fixed px-5 py-2 overflow-y-scroll scrollbar-thin scrollbar-thumb-black h-[72vh] top-8 scroll-smooth w-fit'>
+                <div className='mt-32 col-span-1 left-[700px] fixed px-5 py-2 overflow-y-scroll scrollbar-thin scrollbar-thumb-gray-200 h-[72vh] top-8 scroll-smooth w-fit'>
                     <div className=' h-fit '>
-                        {allFiles.map(({ key }) => {
-                            return <>
-                                <div key={key + v4()} className="rounded-lg shadow-lg mb-5 overflow-hidden border h-fit w-[500px]  bg-white md:mx-0 lg:mx-0">
-                                    <img className="w-full bg-cover w-[700px] h-[250px]" src={`https://imageuploader.s3.ap-south-1.amazonaws.com/${key}`} alt="Your image" />
+                        {allFiles.map(({ Key, Size }) => {
+                            return <div key={Key + v4()}>
+                                <div className="rounded-lg shadow-lg mb-5 overflow-hidden border h-fit w-[500px]  bg-white md:mx-0 lg:mx-0">
+                                    <img className="w-full bg-cover w-[700px] h-[250px]" src={`https://imageuploader.s3.ap-south-1.amazonaws.com/${Key}`} alt="Your image" />
                                 </div>
-                            </>
+                                <div className="px-3 pb-2">
+                                    <div className="text-sm mb-2 text-gray-400 cursor-pointer flex justify-between font-medium">
+                                        <span>file size: {(Size/1000000).toFixed(2)}{" "}<span className='text-xs'>MB</span></span>
+                                        <span onClick={() => handleDelete(Key)} className='text-red-500 cursor-pointer py-1 px-3 border border-solid border-red-500 rounded-sm hover:bg-red-500 hover:text-white' >Delete</span>
+                                    </div>
+                                </div>
+                            </div>
                         })}
                     </div>
                 </div>
